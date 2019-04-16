@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang=en>
+
+<head>
+	<meta charset=utf-8>
+
+	<link href="prism.css" rel="stylesheet" />
+
+    <style>
+    html {
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+
+    body {
+      font-size: 14px;
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      min-width: 100%;
+      padding: 0;
+      margin: 0;
+      display: flex;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      display: flex;
+      flex-grow: 1;
+      flex-direction: column;
+      padding: 20px 0;
+    }
+
+    h1, h2 {
+        text-align: center;
+        margin: 0 0 10px;
+    }
+
+    h1 {
+        margin-bottom: 30px;
+    }
+
+    .side-by-side {
+        display: flex;
+        justify-content:center;
+        margin-bottom: 40px;
+    }
+
+    .col {
+        width: 600px;
+        padding: 0 20px;
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <main>
+        
+        <h1>Quick side-by-side comparison of Svelte 2 and 3</h1>
+        
+        <!-- SECTION -->
+
+        <h2>Client-side component API</h2>
+
+        <div class="side-by-side">
+            <div class="col">
+                <pre><code class="language-js">import App from './App.html';
+
+const app = new App({
+    target: document.querySelector('main'),
+    data: { name: 'world' }
+});
+
+app.set({ name: 'everybody' });
+
+// get() is being removed for v3...
+const { name } = app.get();
+
+const listener = app.on('thingHappened', event => {
+	console.log(`A thing happened: ${event.thing}`);
+});
+
+// some time later...
+listener.cancel();
+app.destroy();</code></pre>
+            </div>
+            <div class="col">
+                <pre><code class="language-js">import App from './App.svelte';
+
+const app = new App({
+	target: document.querySelector('main'),
+	props: { name: 'world' }
+});
+
+app.$set({ name: 'everybody' });
+
+// must set compiler option: { accessors: true }
+const { name } = app;
+
+app.$on('thingHappened', event => {
+	console.log(`A thing happened: ${event.detail.thing}`);
+});
+
+// some time later...
+// No need to cancel $on listener
+app.$destroy();</code></pre>
+            </div>
+        </div>
+
+
+        <!-- SECTION -->
+
+        <h2>Events</h2>
+
+        <div class="side-by-side">
+            <div class="col">
+                <pre><code class="language-js">export default { 
+    methods: {
+        sayHello() {
+            this.fire('message', {test: 'Hello!'})
+        }
+    }
+}</code></pre>
+            </div>
+            <div class="col">
+                <pre><code class="language-js">import { createEventDispatcher } from 'svelte';
+
+const dispatch = createEventDispatcher();
+
+function sayHello() {
+    dispatch('message', { text: 'Hello!' });
+}</code></pre>
+            </div>
+        </div>
+
+
+        <!-- SECTION -->
+
+        <h2>Computed properties</h2>
+
+        <div class="side-by-side">
+            <div class="col">
+                <pre><code class="language-js">export default { 
+    data() {
+        return {
+            name: 'Fred',
+            place: 'world!'
+        };  
+    },
+    computed: {
+        hello({name, place}) {
+            return `${name} says 'Hello, ${place}'`
+        }
+    }
+}</code></pre>
+            </div>
+            <div class="col">
+                <pre><code class="language-js">// use export if your property needs to be set externally
+export let name = 'Fred';
+let place = 'world!'
+
+
+// v3 has no computed properties
+// instead it uses reactive statements
+$: hello = `${name}, says 'Hello, ${place}`
+
+</code></pre>
+            </div>
+        </div>
+
+        <!-- SECTION -->
+
+        <h2>Directives</h2>
+
+        <div class="side-by-side">
+            <div class="col">
+                <pre><code class="language-markup">&lt;div class:foo="a ? b : c">...&lt;/div></code></pre>
+            </div>
+            <div class="col">
+                <pre><code class="language-markup">&lt;div class:foo="{a ? b : c}">...&lt;/div></code></pre>
+            </div>
+        </div>
+
+        <!-- SECTION -->
+
+        <h2 id="component-lifecycle">Component lifecycle</h2>
+
+        <div class="side-by-side">
+            <div class="col">
+                <pre><code class="language-js">export default {
+    data() {
+        return { name: 'Fred' }
+    },
+
+    oncreate() {
+        console.log('The component has been created');
+    },
+
+    onstate({ changed, current, previous }) {
+        if (previous && changed.name) {
+            console.log(`${previous.name} -> ${current.name}`);
+        }
+    },
+
+
+    onupdate({ changed, current, previous }) {
+		console.log('The DOM has been updated');
+	},
+
+    ondestroy() {	
+		console.log('The component has been destroyed');
+	}
+}</code></pre>
+            </div>
+            <div class="col">
+                <pre><code class="language-js">import { onMount, beforeUpdate, afterUpdate, onDestroy } from 'svelte';
+
+export let name = 'Fred';
+let prev_name;
+
+onMount(() => {
+    console.log('the component has mounted');
+});
+
+beforeUpdate(() => {
+    if (prev_name && name !== prev_name) { 
+        console.log(`${prev_name} -> ${name}`);
+    }
+    prev_name = name;
+});
+
+afterUpdate(() => { 
+    console.log('the component just updated');
+});
+
+onDestroy(() => { 
+    console.log('the component is being destroyed');
+});</code></pre>
+            </div>
+        </div>
+
+
+        <!-- SECTION -->
+
+        <h2 id="component-lifecycle">Helpers</h2>
+
+        <div class="side-by-side">
+            <div class="col">
+                <pre><code class="language-html">&lt;div>{ dayjs(dateString) }&lt;/div>
+                
+&lt;script>
+    import dayjs from 'dayjs';
+
+    export default {
+        data() {
+            return { dateString: '2018-08-08' }
+        },
+    
+        helpers() {
+	        dayjs
+        }
+    }
+&lt;/script></code></pre>
+            </div>
+            <div class="col">
+                <pre><code class="language-html">&lt;script>
+    import dayjs from 'dayjs';
+
+    let dateString = '2018-08-08';
+&lt;/script>
+
+&lt;div>{ dayjs(dateString) }&lt;/div></code></pre>
+            </div>
+        </div>
+
+
+        <!-- SECTION -->
+
+        <h2 id="component-lifecycle">Custom methods</h2>
+
+        <div class="side-by-side">
+            <div class="col">
+                <pre><code class="language-html">&lt;button on:click="say('hello')">say hello!&lt;/button>
+
+&lt;script>
+	export default {
+		methods: {
+			say(message) {
+				console.log(message);
+			}
+		}
+	};
+&lt;/script></code></pre>
+            </div>
+            <div class="col">
+                <pre><code class="language-html">&lt;script>
+    // 'export' to expose method externally
+    function say(message) {
+	    console.log(message);
+    }
+&lt;/script>
+
+&lt;button on:click="{() => say('hello')}">say hello!&lt;/button></code></pre>
+            </div>
+        </div>
+
+        <!-- SECTION -->
+
+        <h2 id="component-lifecycle">Custom event handlers</h2>
+
+        <div class="side-by-side">
+            <div class="col">
+                <pre><code class="language-html">&lt;div on:drag="handleDrag(event)">drag me&lt;/div>
+
+&lt;script>
+    export default {
+        events: {
+            drag(node, callback) {
+                // implementation goes here
+            }
+        }
+    }
+&lt;/script></code></pre>
+            </div>
+            <div class="col">
+                <pre><code class="language-html">&lt;script>
+    function drag(node) {
+	    // implementation goes here
+	    return {
+		    destroy() {
+			    // the node has been removed from the DOM
+		    }
+	    };
+    }
+&lt;/script>
+
+&lt;div use:drag>drag me&lt;/div></code></pre>
+            </div>
+        </div>
+
+
+        <!-- SECTION -->
+
+        <h2 id="component-lifecycle">Refs</h2>
+
+        <div class="side-by-side">
+            <div class="col">
+                <pre><code class="language-html">&lt;canvas ref:canvas>&lt;/canvas>
+
+&lt;script>
+	export default {
+		oncreate() {
+			const canvas = this.refs.canvas;
+			const ctx = canvas.getContext('2d');
+		}
+	}
+&lt;/script></code></pre>
+            </div>
+            <div class="col">
+                <pre><code class="language-html">&lt;script>
+    import { onMount } from 'svelte';
+
+    let canvasElement;
+
+    onMount(() => {
+        const ctx = canvasElement.getContext('2d');
+    });
+&lt;/script>
+
+&lt;canvas bind:this={canvasElement}>&lt;/canvas></code></pre>
+            </div>
+        </div>
+</main>
+<script src="prism.js"></script>
+</body>
+</html>
